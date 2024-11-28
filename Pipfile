@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pydantic-settings = "*"
+flet = "*"
+psycopg2-binary = "*"
+
+[dev-packages]
+pre-commit = "*"
+flake8 = "*"
+mypy = "*"
+isort = "*"
+black = "*"
+
+[requires]
+python_version = "3.12"
