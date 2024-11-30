@@ -83,7 +83,6 @@ CREATE TABLE IF NOT EXISTS meetings (
 
     name VARCHAR(100) NOT NULL,
     held_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
 
     location_id UUID NOT NULL REFERENCES locations(id)
 );

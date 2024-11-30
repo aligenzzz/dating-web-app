@@ -1,13 +1,14 @@
 import flet as ft
 
 from connection import get_connection
+from state import AppState
 
 from .base import BaseView
 from .providers import user_provider as provider
 
 
 class AuthView(BaseView):
-    show_registration_form = False
+    _show_registration_form = False
 
     username_ref = ft.Ref[ft.TextField]()
     password_ref = ft.Ref[ft.TextField]()
@@ -25,15 +26,15 @@ class AuthView(BaseView):
     country_ref = ft.Ref[ft.TextField]()
     city_ref = ft.Ref[ft.TextField]()
 
-    def toggle_form(self, e: ft.ControlEvent) -> None:
-        self.show_registration_form = not self.show_registration_form
+    def _toggle_form(self, e: ft.ControlEvent) -> None:
+        self._show_registration_form = not self._show_registration_form
         self.page.views[-1] = self.get_view()
         self.page.update()
 
     def get_view(self) -> ft.View:
         title_text = ft.Container(
             content=ft.Text(
-                "Register" if self.show_registration_form else "Login",
+                "Register" if self._show_registration_form else "Login",
                 theme_style=ft.TextThemeStyle.HEADLINE_MEDIUM,
                 color="#9d528a",
                 weight="bold",
@@ -45,9 +46,9 @@ class AuthView(BaseView):
             content=ft.ElevatedButton(
                 "Enter",
                 on_click=(
-                    self.handle_register
-                    if self.show_registration_form
-                    else self.handle_login
+                    self._handle_register
+                    if self._show_registration_form
+                    else self._handle_login
                 ),
                 style=ft.ButtonStyle(
                     color=ft.Colors.BLACK, bgcolor=ft.Colors.WHITE
@@ -59,10 +60,10 @@ class AuthView(BaseView):
         text_button = ft.TextButton(
             (
                 "Already have an account?"
-                if self.show_registration_form
+                if self._show_registration_form
                 else "Don't have an account?"
             ),
-            on_click=self.toggle_form,
+            on_click=self._toggle_form,
             style=ft.ButtonStyle(
                 color=ft.Colors.BLACK54,
             ),
@@ -107,7 +108,7 @@ class AuthView(BaseView):
                         ),
                         ft.TextField(ref=self.age_ref, label="Age"),
                         ft.TextField(
-                            ref=self.photo_url_ref, label="Photo url"
+                            ref=self.photo_url_ref, label="Photo URL"
                         ),
                         ft.TextField(
                             ref=self.hobbies_ref,
@@ -142,11 +143,11 @@ class AuthView(BaseView):
         form_container = ft.Container(
             content=(
                 registration_form
-                if self.show_registration_form
+                if self._show_registration_form
                 else login_form
             ),
             width=400,
-            height=700 if self.show_registration_form else 330,
+            height=700 if self._show_registration_form else 330,
             padding=20,
             margin=20,
             bgcolor=ft.Colors.WHITE,
@@ -171,13 +172,15 @@ class AuthView(BaseView):
             spacing=0,
         )
 
-    def handle_login(self, e: ft.ControlEvent) -> None:
+    def _handle_login(self, e: ft.ControlEvent) -> None:
         username = self.username_ref.current.value
         password = self.password_ref.current.value
 
         try:
             with get_connection() as connection:
                 user = provider(connection).login(username, password)
+
+            AppState.set("user", user)
 
             if user.role == "admin":
                 self.page.go("/admin")
@@ -192,7 +195,7 @@ class AuthView(BaseView):
             )
             self.page.update()
 
-    def handle_register(self, e: ft.ControlEvent) -> None:
+    def _handle_register(self, e: ft.ControlEvent) -> None:
         form_data = {
             field: ref.current.value
             for field, ref in {
@@ -219,7 +222,7 @@ class AuthView(BaseView):
                 content=ft.Text("Registration successful!"), open=True
             )
             self.page.update()
-            self.toggle_form(None)
+            self._toggle_form(None)
 
         except Exception as exc:
             print(str(exc))

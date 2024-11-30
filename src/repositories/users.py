@@ -8,7 +8,27 @@ class UserRepository:
     def __init__(self, connection: DbConnection):
         self._connection = connection
 
-    def get_user(self, username: str, password: str) -> User | None:
+    def get_user_by_profile(self, profile_id: str) -> User | None:
+        if not profile_id or profile_id.isspace():
+            return None
+
+        with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT users.*, roles.name AS role "
+                "FROM users JOIN roles ON role_id = roles.id "
+                "WHERE profile_id = %s;",
+                (profile_id,),
+            )
+            user_data = cursor.fetchone()
+
+            if not user_data:
+                return None
+            else:
+                return User(**user_data)
+
+    def get_user_by_credentials(
+        self, username: str, password: str
+    ) -> User | None:
         if not username or username.isspace():
             return None
         if not password or password.isspace():

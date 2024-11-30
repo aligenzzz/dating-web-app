@@ -26,17 +26,13 @@ def main(page: ft.Page) -> None:
     page.adaptive = True
     page.theme.page_transitions.windows = "cupertino"
 
-    auth_view = AuthView(page)
-    dashboard_view = DashboardView(page)
-    admin_view = AdminView(page)
-
     def route_change(e) -> None:
         page.views.clear()
-        page.views.append(auth_view.get_view())
+        page.views.append(AuthView(page).get_view())
         if page.route == "/dashboard":
-            page.views.append(dashboard_view.get_view())
+            page.views.append(DashboardView(page).get_view())
         elif page.route == "/admin":
-            page.views.append(admin_view.get_view())
+            page.views.append(AdminView(page).get_view())
         page.update()
 
     def view_pop(e) -> None:

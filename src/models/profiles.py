@@ -23,3 +23,11 @@ class Profile:
         self.description = description
         self.country = country
         self.city = city
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def location(self):
+        return f"{self.city}, {self.country}"

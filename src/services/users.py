@@ -14,7 +14,9 @@ class UserService:
         self._profile_repository = profile_repository
 
     def login(self, username: str, password: str) -> User:
-        user = self._user_repository.get_user(username, password)
+        user = self._user_repository.get_user_by_credentials(
+            username, password
+        )
 
         if not user:
             raise Exception("Invalid credentials")
