@@ -3,12 +3,18 @@ from datetime import datetime, timedelta
 import flet as ft
 
 from connection import get_connection
-from models import Profile, User
+from models import Chat, Profile, User
 from state import AppState
+from utils import format_datetime
 
 from .base import BaseView
 from .components import SearchComponent
-from .providers import chat_provider, meeting_provider, profile_provider
+from .providers import (
+    chat_provider,
+    meeting_provider,
+    message_provider,
+    profile_provider,
+)
 
 
 class DashboardView(BaseView):
@@ -23,6 +29,8 @@ class DashboardView(BaseView):
     meeting_city_ref = ft.Ref[ft.TextField]()
     meeting_address_ref = ft.Ref[ft.TextField]()
 
+    message_content_ref = ft.Ref[ft.TextField]()
+
     def __init__(self, page):
         self.page = page
         self.search_component = SearchComponent(self._on_search_change)
@@ -32,7 +40,7 @@ class DashboardView(BaseView):
         if index == 0:
             self._show_profiles()
         elif index == 1:
-            self.show_chats()
+            self._show_chats()
         elif index == 2:
             self.show_meetings()
         self.page.update()
@@ -298,100 +306,145 @@ class DashboardView(BaseView):
         search_query = e.control.value
         self._show_profiles(search_query)
 
-    def show_chats(self) -> None:
-        pass
-        # chat_list = ft.Column(spacing=10)
+    def _show_chats(self) -> None:
+        with get_connection() as connection:
+            chats = chat_provider(connection).get_chats_of_user(self.user.id)
 
-        # for chat in EXISTING_CHATS:
-        #     chat_row = ft.Container(
-        #         content=ft.Row(
-        #             [
-        #                 ft.CircleAvatar(
-        #                     foreground_image_src="https://avatars.githubusercontent.com/u/5041459?s=88&v=4",  # noqa: E501
-        #                     width=50,
-        #                     height=50,
-        #                 ),
-        #                 ft.Column(
-        #                     [
-        #                         ft.Text(
-        #                             chat["name"],
-        #                             size=18,
-        #                             weight=ft.FontWeight.BOLD,
-        #                         ),
-        #                         ft.Text(
-        #                             chat["last_message"],
-        #                             size=14,
-        #                             color=ft.Colors.GREY,
-        #                         ),
-        #                     ],
-        #                     spacing=5,
-        #                 ),
-        #                 ft.Text(chat["time"], size=12, color=ft.Colors.GREY),
-        #             ],
-        #             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-        #             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        #         ),
-        #         padding=10,
-        #         on_click=lambda e, chat=chat: self.open_chat(chat),
-        #         bgcolor="#f8f9ff",
-        #         border_radius=10,
-        #     )
-        #     chat_list.controls.append(chat_row)
+        chat_list = ft.Column(spacing=10)
 
-        # self.content.content = chat_list
-        # self.page.update()
+        for chat in chats:
+            chat_row = ft.Container(
+                content=ft.Row(
+                    [
+                        ft.CircleAvatar(
+                            foreground_image_src=chat.image_url,
+                            width=50,
+                            height=50,
+                        ),
+                        ft.Column(
+                            [
+                                ft.Container(
+                                    ft.Text(
+                                        (
+                                            f"{chat.name} "
+                                            f"({chat.companion.full_name})"
+                                        ),
+                                        size=16,
+                                        text_align=ft.TextAlign.CENTER,
+                                    ),
+                                    alignment=ft.alignment.center,
+                                ),
+                                ft.Container(
+                                    ft.Text(
+                                        (
+                                            f"{(chat.companion.full_name
+                                                if chat.last_message.user_id != self.user.id  # noqa: E501
+                                                else 'You')}: "
+                                            f"{chat.last_message.content}"
+                                        ),
+                                        size=14,
+                                        color=ft.Colors.GREY,
+                                        text_align=ft.TextAlign.CENTER,
+                                        width=200,
+                                        overflow=ft.TextOverflow.ELLIPSIS,
+                                    ),
+                                    alignment=ft.alignment.center,
+                                ),
+                            ],
+                            alignment=ft.alignment.center,
+                            spacing=5,
+                        ),
+                        ft.Text(
+                            format_datetime(chat.last_message.sent_at),
+                            size=12,
+                            color=ft.Colors.GREY,
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                padding=10,
+                on_click=lambda e, chat=chat: self._open_chat(chat),
+                bgcolor="#f8f9ff",
+                border_radius=20,
+            )
+            chat_list.controls.append(chat_row)
 
-    def open_chat(self, chat) -> None:
+        self.content.content = ft.Container(
+            chat_list,
+            margin=20,
+        )
+        self.page.update()
+
+    def _open_chat(self, chat: Chat) -> None:
+        with get_connection() as connection:
+            messages = message_provider(connection).get_messages_by_chat_id(
+                chat.id
+            )
+
         messages_list = ft.Column(
             controls=[
                 ft.Container(
                     content=ft.Text(
-                        f"{message['sender']}: {message['text']} "
-                        f"({message['time']})"
+                        f"{(message.user.username
+                            if message.user.username != self.user.username
+                            else "You")}: {message.content} "
+                        f"({format_datetime(message.sent_at)})"
                     ),
                     alignment=(
                         ft.alignment.center_right
-                        if message["sender"] == "Вы"
+                        if message.user.username == self.user.username
                         else ft.alignment.center_left
                     ),
-                    padding=10,
+                    padding=15,
                     bgcolor=(
-                        "#e8f0fe" if message["sender"] == "Вы" else "#f1f3f4"
+                        "#e8f0fe"
+                        if message.user.username == self.user.username
+                        else "#f1f3f4"
                     ),
-                    border_radius=10,
+                    border_radius=20,
                 )
-                for message in chat["messages"]
+                for message in messages
             ],
             scroll=ft.ScrollMode.AUTO,
         )
 
-        message_input = ft.TextField(
-            hint_text="Введите сообщение...", expand=True
-        )
-
-        send_button = ft.IconButton(
-            icon=ft.icons.SEND,
-            on_click=lambda e: self.send_message(chat, message_input),
-        )
-
-        self.content.content = ft.Column(
-            [
-                ft.Container(messages_list, expand=True),
-                ft.Row([message_input, send_button]),
-            ],
-            expand=True,
+        self.content.content = ft.Container(
+            ft.Column(
+                [
+                    ft.Container(messages_list, expand=True),
+                    ft.Row(
+                        [
+                            ft.TextField(
+                                ref=self.message_content_ref,
+                                hint_text="Write here",
+                                expand=True,
+                            ),
+                            ft.IconButton(
+                                icon=ft.icons.SEND,
+                                on_click=lambda e: self._send_message(chat),
+                            ),
+                        ]
+                    ),
+                ],
+                expand=True,
+            ),
+            margin=20,
         )
         self.page.update()
 
-    def send_message(self, chat, message_input) -> None:
-        new_message = {
-            "sender": "Вы",
-            "text": message_input.value,
-            "time": "14:45",
-        }
-        chat["messages"].append(new_message)
-        message_input.value = ""
-        self.open_chat(chat)
+    def _send_message(self, chat: Chat) -> None:
+        content = self.message_content_ref.current.value
+        try:
+            with get_connection() as connection:
+                message_provider(connection).add_message(
+                    content, chat.id, self.user.id
+                )
+            self._open_chat(chat)
+        except Exception as e:
+            self.page.snack_bar = ft.SnackBar(ft.Text(str(e)))
+            self.page.snack_bar.open = True
+            self.page.update()
 
     def show_meetings(self) -> None:
         self.content.content = ft.Column(

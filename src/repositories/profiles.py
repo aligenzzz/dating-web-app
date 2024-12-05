@@ -57,6 +57,24 @@ class ProfileRepository:
             else:
                 return Profile(**profile_data)
 
+    def get_profile_by_user_id(self, user_id: str) -> Profile | None:
+        if not user_id or user_id.isspace():
+            return None
+
+        with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT profiles.* FROM users "
+                "JOIN profiles ON profile_id = profiles.id "
+                "WHERE users.id = %s;",
+                (user_id,),
+            )
+            profile_data = cursor.fetchone()
+
+            if not profile_data:
+                return None
+            else:
+                return Profile(**profile_data)
+
     def add_profile(self, profile: Profile) -> Profile:
         with self._connection.cursor() as cursor:
             cursor.execute(

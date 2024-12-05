@@ -48,6 +48,22 @@ class UserRepository:
             else:
                 return User(**user_data)
 
+    def get_user(self, id: str) -> User | None:
+        if not id or id.isspace():
+            return None
+
+        with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM users WHERE id = %s;",
+                (id,),
+            )
+            user_data = cursor.fetchone()
+
+            if not user_data:
+                return None
+            else:
+                return User(**user_data)
+
     def add_user(self, user: User) -> None:
         with self._connection.cursor() as cursor:
             cursor.execute(

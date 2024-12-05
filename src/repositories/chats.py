@@ -11,7 +11,11 @@ class ChatRepository:
     def get_chats_of_user(self, user_id: str) -> list[Chat]:
         with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT chats.*, cu2.user_id AS companion_id "
+                "SELECT chats.*, cu2.user_id AS companion_id, "
+                "(SELECT messages.id FROM messages "
+                "WHERE messages.chat_id = chats.id "
+                "ORDER BY messages.sent_at DESC "
+                "LIMIT 1) AS last_message_id "
                 "FROM chats JOIN chat_users cu1 ON "
                 "chats.id = cu1.chat_id JOIN chat_users cu2 "
                 "ON chats.id = cu2.chat_id "
@@ -25,6 +29,22 @@ class ChatRepository:
                 chats.append(Chat(**chat_data))
 
             return chats
+
+    def get_chat(self, id: str) -> Chat | None:
+        if not id or id.isspace():
+            return None
+
+        with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT * FROM chats WHERE id = %s;",
+                (id,),
+            )
+            chat_data = cursor.fetchone()
+
+            if not chat_data:
+                return None
+            else:
+                return Chat(**chat_data)
 
     def add_chat(self, chat: Chat, user_id: str) -> None:
         with self._connection.cursor() as cursor:

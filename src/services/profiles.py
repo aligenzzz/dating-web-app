@@ -22,3 +22,11 @@ class ProfileService:
             raise Exception("Profile not found")
         else:
             return profile
+
+    def get_profile_by_user_id(self, user_id: str) -> Profile:
+        profile = self._profile_repository.get_profile_by_user_id(user_id)
+
+        if not profile:
+            raise Exception("Profile not found")
+        else:
+            return profile

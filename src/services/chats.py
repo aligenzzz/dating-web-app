@@ -1,7 +1,12 @@
 import re
 
-from models import Chat
-from repositories import ChatRepository, UserRepository
+from models import Chat, Message
+from repositories import (
+    ChatRepository,
+    MessageRepository,
+    ProfileRepository,
+    UserRepository,
+)
 
 
 class ChatService:
@@ -9,9 +14,33 @@ class ChatService:
         self,
         chat_repository: ChatRepository,
         user_repository: UserRepository,
+        profile_repository: ProfileRepository,
+        message_repository: MessageRepository,
     ):
         self._chat_repository = chat_repository
         self._user_repository = user_repository
+        self._profile_repository = profile_repository
+        self._message_repository = message_repository
+
+    def get_chats_of_user(self, user_id: str) -> list[Chat]:
+        user = self._user_repository.get_user(user_id)
+        if not user:
+            raise Exception("User not found")
+        else:
+            chats = self._chat_repository.get_chats_of_user(user_id)
+            for chat in chats:
+                chat.companion = (
+                    self._profile_repository.get_profile_by_user_id(
+                        chat.companion_id
+                    )
+                )
+
+                chat.last_message = self._message_repository.get_message(
+                    chat.last_message_id
+                )
+                if not chat.last_message:
+                    chat.last_message = Message(content="No messages...")
+            return chats
 
     def add_chat(
         self,
