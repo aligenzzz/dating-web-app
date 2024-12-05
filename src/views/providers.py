@@ -37,7 +37,9 @@ def chat_provider(connection: DbConnection) -> ChatService:
 
 def meeting_provider(connection: DbConnection) -> MeetingService:
     return MeetingService(
-        MeetingRepository(connection), UserRepository(connection)
+        MeetingRepository(connection),
+        UserRepository(connection),
+        ProfileRepository(connection),
     )
 
 

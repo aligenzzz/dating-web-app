@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     occupation VARCHAR(100),
     description VARCHAR(255),
 
-    location_id UUID NOT NULL REFERENCES locations(id)
+    location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_banned BOOLEAN DEFAULT FALSE,
 
-    role_id UUID NOT NULL REFERENCES roles(id),
-    profile_id UUID NULL REFERENCES profiles(id)
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    profile_id UUID NULL REFERENCES profiles(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS actions (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS actions (
     name VARCHAR(100) NOT NULL,
     completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    user_id UUID NOT NULL REFERENCES users(id)
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS complaints (
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS complaints (
     content VARCHAR(255) NOT NULL,
     posted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    user_id UUID NOT NULL REFERENCES users(id)
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS chats (
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS chats (
 CREATE TABLE IF NOT EXISTS chat_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    chat_id UUID NOT NULL REFERENCES chats(id),
-    user_id UUID NOT NULL REFERENCES users(id),
+    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     CONSTRAINT unique_chat_user UNIQUE (chat_id, user_id)
 );
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS messages (
     content VARCHAR(255) NOT NULL,
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    chat_id UUID NOT NULL REFERENCES chats(id),
-    user_id UUID NOT NULL REFERENCES users(id)
+    chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS meetings (
@@ -84,14 +84,14 @@ CREATE TABLE IF NOT EXISTS meetings (
     name VARCHAR(100) NOT NULL,
     held_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    location_id UUID NOT NULL REFERENCES locations(id)
+    location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS meeting_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
-    meeting_id UUID NOT NULL REFERENCES meetings(id),
-    user_id UUID NOT NULL REFERENCES users(id),
+    meeting_id UUID NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     CONSTRAINT unique_meeting_user UNIQUE (meeting_id, user_id)
 );

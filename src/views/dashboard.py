@@ -42,7 +42,7 @@ class DashboardView(BaseView):
         elif index == 1:
             self._show_chats()
         elif index == 2:
-            self.show_meetings()
+            self._show_meetings()
         self.page.update()
 
     def _show_profile(self, profile: Profile) -> None:
@@ -407,6 +407,7 @@ class DashboardView(BaseView):
                 for message in messages
             ],
             scroll=ft.ScrollMode.AUTO,
+            auto_scroll=True,
         )
 
         self.content.content = ft.Container(
@@ -419,6 +420,7 @@ class DashboardView(BaseView):
                                 ref=self.message_content_ref,
                                 hint_text="Write here",
                                 expand=True,
+                                max_length=255,
                             ),
                             ft.IconButton(
                                 icon=ft.icons.SEND,
@@ -441,19 +443,79 @@ class DashboardView(BaseView):
                     content, chat.id, self.user.id
                 )
             self._open_chat(chat)
-        except Exception as e:
-            self.page.snack_bar = ft.SnackBar(ft.Text(str(e)))
-            self.page.snack_bar.open = True
-            self.page.update()
+        except Exception as exc:
+            print(str(exc))
 
-    def show_meetings(self) -> None:
-        self.content.content = ft.Column(
-            [
-                ft.Text("Встречи"),
-                ft.Text("Встреча 1"),
-                ft.Text("Встреча 2"),
-            ]
+    def _show_meetings(self) -> None:
+        def submit(e, meeting_id: str):
+            try:
+                with get_connection() as connection:
+                    meeting_provider(connection).delete_meeting(meeting_id)
+            except Exception as exc:
+                print(str(exc))
+
+            self._show_meetings()
+
+        with get_connection() as connection:
+            meetings = meeting_provider(connection).get_meetings_of_user(
+                self.user.id
+            )
+
+        meeting_list = ft.Column(spacing=10)
+
+        for meeting in meetings:
+            meeting_row = ft.Container(
+                content=ft.Row(
+                    [
+                        ft.Column(
+                            [
+                                ft.Text(
+                                    (
+                                        f"{meeting.name} "
+                                        f"({meeting.companion.full_name})"
+                                    ),
+                                    size=16,
+                                    weight=ft.FontWeight.BOLD,
+                                ),
+                                ft.Text(
+                                    (
+                                        "Held at: "
+                                        f"{format_datetime(meeting.held_at)}"
+                                    ),
+                                    size=14,
+                                    color=ft.Colors.GREY,
+                                ),
+                                ft.Text(
+                                    f"Location: {meeting.location}",
+                                    size=14,
+                                    color=ft.Colors.GREY,
+                                ),
+                            ],
+                            spacing=5,
+                            expand=True,
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.DELETE,
+                            icon_color=ft.colors.GREY,
+                            on_click=lambda e, meeting_id=meeting.id: submit(
+                                e, meeting_id
+                            ),
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                padding=25,
+                bgcolor="#f8f9ff",
+                border_radius=20,
+            )
+            meeting_list.controls.append(meeting_row)
+
+        self.content.content = ft.Container(
+            content=meeting_list,
+            margin=20,
         )
+        self.page.update()
 
     def get_view(self) -> ft.View:
         self.user = AppState.get("user")

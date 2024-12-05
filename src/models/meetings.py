@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 
 class Meeting:
@@ -13,6 +14,8 @@ class Meeting:
         companion_id: str = "",
         **kwargs,
     ):
+        from models import Profile
+
         self.id = id
         self.name = name
         self.held_at = held_at
@@ -20,3 +23,9 @@ class Meeting:
         self.city = city
         self.address = address
         self.companion_id = companion_id
+
+        self.companion: Optional[Profile] = None
+
+    @property
+    def location(self):
+        return f"{self.country}, {self.city}, {self.address}"
