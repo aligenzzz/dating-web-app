@@ -1,7 +1,12 @@
 from datetime import datetime, time
 
-from models import Meeting
-from repositories import MeetingRepository, ProfileRepository, UserRepository
+from models import Action, Meeting
+from repositories import (
+    ActionRepository,
+    MeetingRepository,
+    ProfileRepository,
+    UserRepository,
+)
 
 
 class MeetingService:
@@ -10,10 +15,12 @@ class MeetingService:
         meeting_repository: MeetingRepository,
         user_repository: UserRepository,
         profile_repository: ProfileRepository,
+        action_repository: ActionRepository,
     ):
         self._meeting_repository = meeting_repository
         self._user_repository = user_repository
         self._profile_repository = profile_repository
+        self._action_repository = action_repository
 
     def get_meetings_of_user(self, user_id: str) -> list[Meeting]:
         user = self._user_repository.get_user(user_id)
@@ -71,10 +78,16 @@ class MeetingService:
             companion_id=companion.id,
         )
         self._meeting_repository.add_meeting(meeting, user_id)
+        self._action_repository.add_action(
+            Action(name="Created a meeting", user_id=user_id)
+        )
 
-    def delete_meeting(self, id: str) -> None:
+    def delete_meeting(self, id: str, user_id: str) -> None:
         meeting = self._meeting_repository.get_meeting(id)
         if not meeting:
             raise Exception("Meeting not found")
         else:
             self._meeting_repository.delete_meeting(id)
+            self._action_repository.add_action(
+                Action(name="Deleted a meeting", user_id=user_id)
+            )

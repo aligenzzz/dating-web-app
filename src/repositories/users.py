@@ -8,6 +8,21 @@ class UserRepository:
     def __init__(self, connection: DbConnection):
         self._connection = connection
 
+    def get_users(self) -> list[User]:
+        with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(
+                "SELECT users.*, roles.name AS role "
+                "FROM users JOIN roles ON role_id = roles.id "
+                "WHERE roles.name = 'user';"
+            )
+            users_data = cursor.fetchall()
+
+            users = []
+            for user_data in users_data:
+                users.append(User(**user_data))
+
+            return users
+
     def get_user_by_profile(self, profile_id: str) -> User | None:
         if not profile_id or profile_id.isspace():
             return None
@@ -81,4 +96,20 @@ class UserRepository:
                     role_id,
                     user.profile_id,
                 ),
+            )
+
+    def ban_user(self, id: str) -> None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT is_banned FROM users WHERE id = %s;",
+                (id,),
+            )
+            result = cursor.fetchone()
+
+            is_banned = result[0]
+            new_status = not is_banned
+
+            cursor.execute(
+                "UPDATE users SET is_banned = %s WHERE id = %s;",
+                (new_status, id),
             )

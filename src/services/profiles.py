@@ -1,15 +1,17 @@
 import re
 
-from models import Profile
-from repositories import ProfileRepository
+from models import Action, Profile
+from repositories import ActionRepository, ProfileRepository
 
 
 class ProfileService:
     def __init__(
         self,
         profile_repository: ProfileRepository,
+        action_repository: ActionRepository,
     ):
         self._profile_repository = profile_repository
+        self._action_repository = action_repository
 
     def get_profiles(self) -> list[Profile]:
         return self._profile_repository.get_profiles()
@@ -33,7 +35,7 @@ class ProfileService:
         else:
             return profile
 
-    def update_profile(self, new_profile: Profile) -> Profile:
+    def update_profile(self, new_profile: Profile, user_id: str) -> Profile:
         profile = self._profile_repository.get_profile(new_profile.id)
         if not profile:
             raise Exception("Profile not found")
@@ -64,5 +66,8 @@ class ProfileService:
             raise Exception("Invalid photo URL format")
 
         self._profile_repository.update_profile(new_profile)
+        self._action_repository.add_action(
+            Action(name="Updated profile", user_id=user_id)
+        )
 
         return new_profile

@@ -293,6 +293,7 @@ class DashboardView(BaseView):
         profile_list = ft.Row(
             wrap=True,
             scroll=ft.ScrollMode.AUTO,
+            expand=True,
         )
 
         for profile in filtered_profiles:
@@ -338,7 +339,9 @@ class DashboardView(BaseView):
         with get_connection() as connection:
             chats = chat_provider(connection).get_chats_of_user(self.user.id)
 
-        chat_list = ft.Column(spacing=10)
+        chat_list = ft.Column(
+            spacing=10, expand=True, scroll=ft.ScrollMode.AUTO
+        )
 
         for chat in chats:
             chat_row = ft.Container(
@@ -369,6 +372,9 @@ class DashboardView(BaseView):
                                                 if chat.last_message.user_id != self.user.id  # noqa: E501
                                                 else 'You')}: "
                                             f"{chat.last_message.content}"
+                                            if chat.last_message.content
+                                            != "Empty"
+                                            else f"{chat.last_message.content}"
                                         ),
                                         size=14,
                                         color=ft.Colors.GREY,
@@ -383,7 +389,11 @@ class DashboardView(BaseView):
                             spacing=5,
                         ),
                         ft.Text(
-                            format_datetime(chat.last_message.sent_at),
+                            (
+                                format_datetime(chat.last_message.sent_at)
+                                if chat.last_message.content != "Empty"
+                                else ""
+                            ),
                             size=12,
                             color=ft.Colors.GREY,
                         ),
@@ -399,8 +409,9 @@ class DashboardView(BaseView):
             chat_list.controls.append(chat_row)
 
         self.content.content = ft.Container(
-            chat_list,
+            content=chat_list,
             margin=20,
+            alignment=ft.alignment.top_left,
         )
         self.page.update()
 
@@ -478,7 +489,9 @@ class DashboardView(BaseView):
         def submit(e, meeting_id: str) -> None:
             try:
                 with get_connection() as connection:
-                    meeting_provider(connection).delete_meeting(meeting_id)
+                    meeting_provider(connection).delete_meeting(
+                        meeting_id, self.user.id
+                    )
             except Exception as exc:
                 print(str(exc))
 
@@ -489,7 +502,9 @@ class DashboardView(BaseView):
                 self.user.id
             )
 
-        meeting_list = ft.Column(spacing=10)
+        meeting_list = ft.Column(
+            spacing=10, expand=True, scroll=ft.ScrollMode.AUTO
+        )
 
         for meeting in meetings:
             meeting_row = ft.Container(
@@ -531,7 +546,6 @@ class DashboardView(BaseView):
                         ),
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 padding=25,
                 bgcolor="#f8f9ff",
@@ -542,6 +556,7 @@ class DashboardView(BaseView):
         self.content.content = ft.Container(
             content=meeting_list,
             margin=20,
+            alignment=ft.alignment.top_left,
         )
         self.page.update()
 
@@ -562,7 +577,7 @@ class DashboardView(BaseView):
             try:
                 with get_connection() as connection:
                     self.profile = profile_provider(connection).update_profile(
-                        new_profile
+                        new_profile, self.user.id
                     )
 
             except Exception as exc:

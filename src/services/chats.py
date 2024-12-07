@@ -1,7 +1,8 @@
 import re
 
-from models import Chat, Message
+from models import Action, Chat, Message
 from repositories import (
+    ActionRepository,
     ChatRepository,
     MessageRepository,
     ProfileRepository,
@@ -16,11 +17,13 @@ class ChatService:
         user_repository: UserRepository,
         profile_repository: ProfileRepository,
         message_repository: MessageRepository,
+        action_repository: ActionRepository,
     ):
         self._chat_repository = chat_repository
         self._user_repository = user_repository
         self._profile_repository = profile_repository
         self._message_repository = message_repository
+        self._action_repository = action_repository
 
     def get_chats_of_user(self, user_id: str) -> list[Chat]:
         user = self._user_repository.get_user(user_id)
@@ -39,7 +42,7 @@ class ChatService:
                     chat.last_message_id
                 )
                 if not chat.last_message:
-                    chat.last_message = Message(content="No messages...")
+                    chat.last_message = Message(content="Empty")
             return chats
 
     def add_chat(
@@ -71,3 +74,6 @@ class ChatService:
 
         chat = Chat(name=name, image_url=image_url, companion_id=companion.id)
         self._chat_repository.add_chat(chat, user_id)
+        self._action_repository.add_action(
+            Action(name="Created a chat", user_id=user_id)
+        )

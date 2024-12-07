@@ -13,6 +13,9 @@ class UserService:
         self._user_repository = user_repository
         self._profile_repository = profile_repository
 
+    def get_users(self) -> list[User]:
+        return self._user_repository.get_users()
+
     def login(self, username: str, password: str) -> User:
         user = self._user_repository.get_user_by_credentials(
             username, password
@@ -20,6 +23,8 @@ class UserService:
 
         if not user:
             raise Exception("Invalid credentials")
+        elif user.is_banned:
+            raise Exception("This user was banned")
         else:
             return user
 
@@ -89,3 +94,10 @@ class UserService:
             profile_id=profile.id,
         )
         self._user_repository.add_user(user)
+
+    def ban_user(self, id: str) -> None:
+        user = self._user_repository.get_user(id)
+        if not user:
+            raise Exception("User not found")
+        else:
+            self._user_repository.ban_user(id)

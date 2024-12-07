@@ -1,5 +1,10 @@
-from models import Message
-from repositories import ChatRepository, MessageRepository, UserRepository
+from models import Action, Message
+from repositories import (
+    ActionRepository,
+    ChatRepository,
+    MessageRepository,
+    UserRepository,
+)
 
 
 class MessageService:
@@ -8,10 +13,12 @@ class MessageService:
         message_repository: MessageRepository,
         user_repository: UserRepository,
         chat_repository: ChatRepository,
+        action_repository: ActionRepository,
     ):
         self._message_repository = message_repository
         self._user_repository = user_repository
         self._chat_repository = chat_repository
+        self._action_repository = action_repository
 
     def get_messages_by_chat_id(self, chat_id: str) -> list[Message]:
         messages = self._message_repository.get_messages_by_chat_id(chat_id)
@@ -38,3 +45,6 @@ class MessageService:
 
         message = Message(content=content, chat_id=chat_id, user_id=user_id)
         self._message_repository.add_message(message)
+        self._action_repository.add_action(
+            Action(name="Sent a message", user_id=user_id)
+        )
