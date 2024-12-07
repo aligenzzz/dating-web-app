@@ -11,7 +11,7 @@ class ProfileRepository:
     def get_profiles(self) -> list[Profile]:
         with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT profiles.*, locations.country, locations.city "
+                "SELECT profiles.*, country, city "
                 "FROM profiles JOIN locations "
                 "ON location_id = locations.id;",
                 (id,),
@@ -27,7 +27,7 @@ class ProfileRepository:
     def get_profiles_exclude_one(self, id: str) -> list[Profile]:
         with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT profiles.*, locations.country, locations.city "
+                "SELECT profiles.*, country, city "
                 "FROM profiles JOIN locations "
                 "ON location_id = locations.id WHERE "
                 "profiles.id != %s;",
@@ -47,7 +47,9 @@ class ProfileRepository:
 
         with self._connection.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(
-                "SELECT * FROM profiles WHERE id = %s;",
+                "SELECT profiles.*, country, city FROM profiles "
+                "JOIN locations ON location_id = locations.id "
+                "WHERE profiles.id = %s;",
                 (id,),
             )
             profile_data = cursor.fetchone()
@@ -102,3 +104,30 @@ class ProfileRepository:
 
             profile.id = cursor.fetchone()[0]
             return profile
+
+    def update_profile(self, profile: Profile) -> None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE locations "
+                "SET country = %s, city = %s "
+                "WHERE id = (SELECT location_id "
+                "FROM profiles WHERE id = %s);",
+                (profile.country, profile.city, profile.id),
+            )
+
+            cursor.execute(
+                "UPDATE profiles SET first_name = %s, "
+                "last_name = %s, age = %s, photo_url = %s, "
+                "hobbies = %s, occupation = %s, description = %s "
+                "WHERE id = %s;",
+                (
+                    profile.first_name,
+                    profile.last_name,
+                    profile.age,
+                    profile.photo_url,
+                    profile.hobbies,
+                    profile.occupation,
+                    profile.description,
+                    profile.id,
+                ),
+            )

@@ -96,6 +96,20 @@ CREATE TABLE IF NOT EXISTS meeting_users (
     CONSTRAINT unique_meeting_user UNIQUE (meeting_id, user_id)
 );
 
+CREATE OR REPLACE FUNCTION delete_location_on_meeting_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+    DELETE FROM locations
+    WHERE id = OLD.location_id;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trigger_delete_location
+AFTER DELETE ON meetings
+FOR EACH ROW
+EXECUTE FUNCTION delete_location_on_meeting_delete();
+
 INSERT INTO roles (id, name)
 VALUES
     ('eb808052-1d0a-42a9-9273-b374ec789adf', 'admin'),

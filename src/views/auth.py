@@ -72,9 +72,14 @@ class AuthView(BaseView):
         login_form = ft.Column(
             [
                 title_text,
-                ft.TextField(ref=self.username_ref, label="Username"),
                 ft.TextField(
-                    ref=self.password_ref, label="Password", password=True
+                    ref=self.username_ref, label="Username", max_length=50
+                ),
+                ft.TextField(
+                    ref=self.password_ref,
+                    label="Password",
+                    password=True,
+                    max_length=100,
                 ),
                 enter_button,
                 text_button,
@@ -87,49 +92,71 @@ class AuthView(BaseView):
                 title_text,
                 ft.Column(
                     [
+                        ft.Divider(height=20, color="#f8f9ff"),
                         ft.TextField(
-                            ref=self.reg_username_ref, label="Username"
+                            ref=self.reg_username_ref,
+                            label="Username",
+                            max_length=50,
                         ),
                         ft.TextField(
                             ref=self.reg_password_ref,
                             label="Password",
                             password=True,
+                            max_length=100,
                         ),
                         ft.TextField(
                             ref=self.confirm_password_ref,
                             label="Confirm Password",
                             password=True,
+                            max_length=100,
                         ),
                         ft.TextField(
-                            ref=self.first_name_ref, label="First Name"
+                            ref=self.first_name_ref,
+                            label="First Name",
+                            max_length=50,
                         ),
                         ft.TextField(
-                            ref=self.last_name_ref, label="Last Name"
+                            ref=self.last_name_ref,
+                            label="Last Name",
+                            max_length=50,
                         ),
-                        ft.TextField(ref=self.age_ref, label="Age"),
                         ft.TextField(
-                            ref=self.photo_url_ref, label="Photo URL"
+                            ref=self.age_ref, label="Age", max_length=3
+                        ),
+                        ft.TextField(
+                            ref=self.photo_url_ref,
+                            label="Photo URL",
+                            max_length=255,
                         ),
                         ft.TextField(
                             ref=self.hobbies_ref,
                             label="Hobbies",
                             multiline=True,
                             min_lines=2,
+                            max_length=255,
                         ),
                         ft.TextField(
                             ref=self.occupation_ref,
                             label="Occupation",
                             multiline=True,
                             min_lines=2,
+                            max_length=100,
                         ),
                         ft.TextField(
                             ref=self.description_ref,
                             label="Description",
                             multiline=True,
                             min_lines=2,
+                            max_length=255,
                         ),
-                        ft.TextField(ref=self.country_ref, label="Country"),
-                        ft.TextField(ref=self.city_ref, label="City"),
+                        ft.TextField(
+                            ref=self.country_ref,
+                            label="Country",
+                            max_length=50,
+                        ),
+                        ft.TextField(
+                            ref=self.city_ref, label="City", max_length=50
+                        ),
                     ],
                     scroll=ft.ScrollMode.AUTO,
                     expand=True,
@@ -189,7 +216,6 @@ class AuthView(BaseView):
 
         except Exception as exc:
             print(str(exc))
-
             self.page.snack_bar = ft.SnackBar(
                 content=ft.Text(str(exc)), open=True
             )
@@ -226,7 +252,6 @@ class AuthView(BaseView):
 
         except Exception as exc:
             print(str(exc))
-
             self.page.snack_bar = ft.SnackBar(
                 content=ft.Text(str(exc)), open=True
             )

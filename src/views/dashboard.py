@@ -6,11 +6,13 @@ from connection import get_connection
 from models import Chat, Profile, User
 from state import AppState
 from utils import format_datetime
+from views.components import EditableComponent
 
 from .base import BaseView
 from .components import SearchComponent
 from .providers import (
     chat_provider,
+    complaint_provider,
     meeting_provider,
     message_provider,
     profile_provider,
@@ -31,6 +33,18 @@ class DashboardView(BaseView):
 
     message_content_ref = ft.Ref[ft.TextField]()
 
+    first_name_ref = ft.Ref[ft.TextField]()
+    last_name_ref = ft.Ref[ft.TextField]()
+    age_ref = ft.Ref[ft.TextField]()
+    photo_url_ref = ft.Ref[ft.TextField]()
+    hobbies_ref = ft.Ref[ft.TextField]()
+    occupation_ref = ft.Ref[ft.TextField]()
+    description_ref = ft.Ref[ft.TextField]()
+    country_ref = ft.Ref[ft.TextField]()
+    city_ref = ft.Ref[ft.TextField]()
+
+    complaint_content_ref = ft.Ref[ft.TextField]()
+
     def __init__(self, page):
         self.page = page
         self.search_component = SearchComponent(self._on_search_change)
@@ -43,6 +57,8 @@ class DashboardView(BaseView):
             self._show_chats()
         elif index == 2:
             self._show_meetings()
+        elif index == 3:
+            self._show_settings()
         self.page.update()
 
     def _show_profile(self, profile: Profile) -> None:
@@ -107,7 +123,7 @@ class DashboardView(BaseView):
         self.page.update()
 
     def _show_chat_form(self, profile: Profile) -> None:
-        def submit(e):
+        def submit(e) -> None:
             name = self.chat_name_ref.current.value
             image_url = self.chat_image_url_ref.current.value
 
@@ -135,9 +151,13 @@ class DashboardView(BaseView):
             title=ft.Text(f"Chat creation with {profile.full_name}:"),
             content=ft.Column(
                 [
-                    ft.TextField(ref=self.chat_name_ref, label="Name"),
                     ft.TextField(
-                        ref=self.chat_image_url_ref, label="Image URL"
+                        ref=self.chat_name_ref, label="Name", max_length=100
+                    ),
+                    ft.TextField(
+                        ref=self.chat_image_url_ref,
+                        label="Image URL",
+                        max_length=255,
                     ),
                 ],
                 spacing=20,
@@ -156,7 +176,7 @@ class DashboardView(BaseView):
         self.page.update()
 
     def _show_meeting_form(self, profile: Profile) -> None:
-        def submit(e):
+        def submit(e) -> None:
             name = self.meeting_name_ref.current.value
             country = self.meeting_country_ref.current.value
             city = self.meeting_city_ref.current.value
@@ -202,7 +222,9 @@ class DashboardView(BaseView):
             title=ft.Text(f"Meeting creation with {profile.full_name}:"),
             content=ft.Column(
                 [
-                    ft.TextField(ref=self.meeting_name_ref, label="Name"),
+                    ft.TextField(
+                        ref=self.meeting_name_ref, label="Name", max_length=100
+                    ),
                     ft.Row(
                         [
                             ft.ElevatedButton(
@@ -219,11 +241,17 @@ class DashboardView(BaseView):
                         alignment=ft.MainAxisAlignment.CENTER,
                     ),
                     ft.TextField(
-                        ref=self.meeting_country_ref, label="Country"
+                        ref=self.meeting_country_ref,
+                        label="Country",
+                        max_length=50,
                     ),
-                    ft.TextField(ref=self.meeting_city_ref, label="City"),
                     ft.TextField(
-                        ref=self.meeting_address_ref, label="Address"
+                        ref=self.meeting_city_ref, label="City", max_length=50
+                    ),
+                    ft.TextField(
+                        ref=self.meeting_address_ref,
+                        label="Address",
+                        max_length=100,
                     ),
                 ],
                 spacing=20,
@@ -447,7 +475,7 @@ class DashboardView(BaseView):
             print(str(exc))
 
     def _show_meetings(self) -> None:
-        def submit(e, meeting_id: str):
+        def submit(e, meeting_id: str) -> None:
             try:
                 with get_connection() as connection:
                     meeting_provider(connection).delete_meeting(meeting_id)
@@ -515,6 +543,180 @@ class DashboardView(BaseView):
             content=meeting_list,
             margin=20,
         )
+        self.page.update()
+
+    def _show_settings(self):
+        def submit(e) -> None:
+            new_profile = Profile()
+            new_profile.id = self.profile.id
+            new_profile.first_name = self.first_name_ref.current.value
+            new_profile.last_name = self.last_name_ref.current.value
+            new_profile.age = self.age_ref.current.value
+            new_profile.photo_url = self.photo_url_ref.current.value
+            new_profile.hobbies = self.hobbies_ref.current.value
+            new_profile.occupation = self.occupation_ref.current.value
+            new_profile.description = self.description_ref.current.value
+            new_profile.country = self.country_ref.current.value
+            new_profile.city = self.city_ref.current.value
+
+            try:
+                with get_connection() as connection:
+                    self.profile = profile_provider(connection).update_profile(
+                        new_profile
+                    )
+
+            except Exception as exc:
+                print(str(exc))
+                self.page.snack_bar = ft.SnackBar(
+                    content=ft.Text(str(exc)), open=True
+                )
+                self.page.update()
+
+            self._show_settings()
+
+        settings_controls = ft.Column(
+            [
+                ft.CircleAvatar(
+                    foreground_image_src=self.profile.photo_url,
+                    width=150,
+                    height=150,
+                    content=ft.Text(self.profile.full_name[0], size=50),
+                ),
+                ft.Column(
+                    [
+                        ft.Divider(height=20, color="#f8f9ff"),
+                        EditableComponent(
+                            label="First Name",
+                            max_length=50,
+                            value=self.profile.first_name,
+                            submit=submit,
+                            ref=self.first_name_ref,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Last Name",
+                            max_length=50,
+                            value=self.profile.last_name,
+                            submit=submit,
+                            ref=self.last_name_ref,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Age",
+                            max_length=3,
+                            value=str(self.profile.age),
+                            submit=submit,
+                            ref=self.age_ref,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Photo URL",
+                            max_length=255,
+                            value=self.profile.photo_url,
+                            submit=submit,
+                            ref=self.photo_url_ref,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Hobbies",
+                            max_length=255,
+                            value=self.profile.hobbies,
+                            submit=submit,
+                            ref=self.hobbies_ref,
+                            min_lines=2,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Occupation",
+                            max_length=100,
+                            value=self.profile.occupation,
+                            submit=submit,
+                            ref=self.occupation_ref,
+                            min_lines=2,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Description",
+                            max_length=255,
+                            value=self.profile.description,
+                            submit=submit,
+                            ref=self.description_ref,
+                            min_lines=2,
+                        ).get_view(),
+                        EditableComponent(
+                            label="Country",
+                            max_length=50,
+                            value=self.profile.country,
+                            submit=submit,
+                            ref=self.country_ref,
+                        ).get_view(),
+                        EditableComponent(
+                            label="City",
+                            max_length=50,
+                            value=self.profile.city,
+                            submit=submit,
+                            ref=self.city_ref,
+                        ).get_view(),
+                    ],
+                    scroll=ft.ScrollMode.AUTO,
+                    expand=True,
+                ),
+                ft.ElevatedButton(
+                    text="Create complaint",
+                    style=ft.ButtonStyle(
+                        bgcolor="#5783b0",
+                        color="#f8f9ff",
+                    ),
+                    on_click=lambda e: self._show_complaint_form(),
+                ),
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        self.content.content = ft.Container(
+            content=settings_controls,
+            padding=40,
+            alignment=ft.alignment.center,
+        )
+        self.page.update()
+
+    def _show_complaint_form(self) -> None:
+        def submit(e) -> None:
+            content = self.complaint_content_ref.current.value
+
+            try:
+                with get_connection() as connection:
+                    complaint_provider(connection).add_complaint(
+                        content, self.user.id
+                    )
+
+                self.page.dialog.open = False
+                self.page.snack_bar = ft.SnackBar(
+                    ft.Text("Complaint was created!"),
+                    open=True,
+                )
+
+            except Exception as exc:
+                print(str(exc))
+                self.page.snack_bar = ft.SnackBar(
+                    content=ft.Text(str(exc)), open=True
+                )
+
+            self.page.update()
+
+        complaint_form = ft.AlertDialog(
+            title=ft.Text("Complaint creation:"),
+            content=ft.TextField(
+                ref=self.complaint_content_ref,
+                label="Content",
+                max_length=255,
+                multiline=True,
+                min_lines=2,
+            ),
+            actions=[
+                ft.TextButton(
+                    "Cancel", on_click=lambda e: self._close_dialog()
+                ),
+                ft.TextButton("Create", on_click=submit),
+            ],
+        )
+
+        self.page.dialog = complaint_form
+        complaint_form.open = True
         self.page.update()
 
     def get_view(self) -> ft.View:

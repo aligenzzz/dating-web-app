@@ -2,6 +2,7 @@ from psycopg2.extensions import connection as DbConnection
 
 from repositories import (
     ChatRepository,
+    ComplaintRepository,
     MeetingRepository,
     MessageRepository,
     ProfileRepository,
@@ -9,6 +10,7 @@ from repositories import (
 )
 from services import (
     ChatService,
+    ComplaintService,
     MeetingService,
     MessageService,
     ProfileService,
@@ -48,4 +50,11 @@ def message_provider(connection: DbConnection) -> MessageService:
         MessageRepository(connection),
         UserRepository(connection),
         ChatRepository(connection),
+    )
+
+
+def complaint_provider(connection: DbConnection) -> ComplaintService:
+    return ComplaintService(
+        ComplaintRepository(connection),
+        UserRepository(connection),
     )
